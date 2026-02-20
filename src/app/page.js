@@ -1,40 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [dark, setDark] = useState(false);
+  const [filter, setFilter] = useState("all");
 
-  // Load from localStorage
+  // Load tasks from localStorage
   useEffect(() => {
-    const savedTasks = localStorage.getItem("focusflow_tasks");
-    const savedTheme = localStorage.getItem("focusflow_theme");
-
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedTheme) setDark(savedTheme === "dark");
+    const storedTasks = localStorage.getItem("focusflow-tasks");
+    if (storedTasks) {
+      setTasks(JSON.parse(storedTasks));
+    }
   }, []);
 
+  // Save tasks to localStorage
   useEffect(() => {
-    localStorage.setItem("focusflow_tasks", JSON.stringify(tasks));
+    localStorage.setItem("focusflow-tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  useEffect(() => {
-    localStorage.setItem("focusflow_theme", dark ? "dark" : "light");
-  }, [dark]);
-
   const addTask = () => {
-    if (!task.trim()) return;
-
+    if (task.trim() === "") return;
     const newTask = {
       id: Date.now(),
       text: task,
       completed: false,
     };
-
     setTasks([...tasks, newTask]);
     setTask("");
   };
@@ -51,196 +43,104 @@ export default function Home() {
     setTasks(tasks.filter((t) => t.id !== id));
   };
 
-  const filteredTasks =
-    filter === "All"
-      ? tasks
-      : filter === "Completed"
-      ? tasks.filter((t) => t.completed)
-      : tasks.filter((t) => !t.completed);
+  const filteredTasks = tasks.filter((t) => {
+    if (filter === "active") return !t.completed;
+    if (filter === "completed") return t.completed;
+    return true;
+  });
 
   const completedCount = tasks.filter((t) => t.completed).length;
   const progress =
-    tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+    tasks.length === 0
+      ? 0
+      : Math.round((completedCount / tasks.length) * 100);
 
   return (
-    <div
-      className={`min-h-screen transition-all duration-500 ${
-        dark
-          ? "bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white"
-          : "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white"
-      }`}
-    >
-      <div className="max-w-4xl mx-auto p-10">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-2xl p-6 shadow-2xl text-white">
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex justify-between items-center mb-12"
-        >
-          <div>
-            <h1 className="text-6xl font-extrabold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              FocusFlow
-            </h1>
-            <p className="text-sm opacity-80 mt-2">
-              Smart productivity dashboard with modern UI design.
-            </p>
-          </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">
+          FocusFlow
+        </h1>
 
+        {/* Input */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <input
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            placeholder="What needs focus today?"
+            className="flex-1 p-3 rounded-lg text-black outline-none"
+          />
           <button
-            onClick={() => setDark(!dark)}
-            className="px-5 py-2 rounded-xl bg-white/20 backdrop-blur-md shadow-lg hover:scale-105 active:scale-95 transition"
+            onClick={addTask}
+            className="bg-blue-500 hover:bg-blue-600 px-4 py-3 rounded-lg font-semibold transition"
           >
-            {dark ? "Light Mode" : "Dark Mode"}
+            Add
           </button>
-        </motion.div>
+        </div>
 
-        {/* Main Card */}
-        <div
-          className={`${
-            dark ? "bg-white/10" : "bg-white/20"
-          } backdrop-blur-2xl rounded-3xl p-8 shadow-2xl transition-all`}
-        >
-          {/* Input */}
-          <div className="flex gap-4 mb-8">
-            <input
-              type="text"
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              placeholder="What needs focus today?"
-              className="flex-1 p-4 rounded-xl bg-white/70 text-black outline-none focus:ring-4 focus:ring-indigo-400 transition"
+        {/* Progress */}
+        <div className="mb-4">
+          <p className="text-sm">
+            {completedCount} of {tasks.length} completed
+          </p>
+          <div className="w-full bg-white/20 h-2 rounded-full mt-1">
+            <div
+              className="bg-green-400 h-2 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
             />
+          </div>
+        </div>
 
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={addTask}
-              className="px-8 py-4 rounded-xl bg-indigo-600 text-white font-semibold shadow-xl"
+        {/* Filters */}
+        <div className="flex justify-center gap-2 mb-4">
+          {["all", "active", "completed"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilter(type)}
+              className={`px-3 py-1 rounded-full text-sm ${
+                filter === type
+                  ? "bg-white text-black"
+                  : "bg-white/20"
+              }`}
             >
-              Add
-            </motion.button>
-          </div>
+              {type}
+            </button>
+          ))}
+        </div>
 
-          {/* Stats Section */}
-          <div className="flex justify-between items-center mb-8">
-
-            <div className="flex gap-6 text-sm">
-              <div>
-                <p className="opacity-70">Total</p>
-                <p className="text-xl font-bold">{tasks.length}</p>
-              </div>
-              <div>
-                <p className="opacity-70">Completed</p>
-                <p className="text-xl font-bold">{completedCount}</p>
-              </div>
-            </div>
-
-            {/* Progress Circle */}
-            <div className="relative w-20 h-20">
-              <svg className="transform -rotate-90 w-20 h-20">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="35"
-                  stroke="white"
-                  strokeWidth="6"
-                  fill="transparent"
-                  opacity="0.2"
-                />
-                <motion.circle
-                  cx="40"
-                  cy="40"
-                  r="35"
-                  stroke="white"
-                  strokeWidth="6"
-                  fill="transparent"
-                  strokeDasharray={220}
-                  strokeDashoffset={220 - (220 * progress) / 100}
-                  initial={{ strokeDashoffset: 220 }}
-                  animate={{
-                    strokeDashoffset: 220 - (220 * progress) / 100,
-                  }}
-                  transition={{ duration: 0.5 }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                {progress}%
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4 mb-8">
-            {["All", "Active", "Completed"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilter(type)}
-                className={`px-5 py-2 rounded-full font-medium transition hover:scale-105 active:scale-95 ${
-                  filter === type
-                    ? "bg-indigo-600 text-white shadow-lg"
-                    : "bg-white/30"
-                }`}
+        {/* Task List */}
+        <div className="space-y-2">
+          {filteredTasks.length === 0 ? (
+            <p className="text-center text-sm opacity-70">
+              No tasks here 🚀
+            </p>
+          ) : (
+            filteredTasks.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-center justify-between bg-white/20 p-3 rounded-lg"
               >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {/* Task List */}
-          <div className="space-y-4">
-            <AnimatePresence>
-              {filteredTasks.map((t) => (
-                <motion.div
-                  layout
-                  key={t.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -60 }}
-                  transition={{ duration: 0.3 }}
-                  className={`flex justify-between items-center p-4 rounded-xl shadow-lg hover:shadow-2xl transition ${
-                    t.completed
-                      ? "bg-green-400/60"
-                      : "bg-white/60 text-black"
+                <span
+                  onClick={() => toggleTask(t.id)}
+                  className={`cursor-pointer flex-1 ${
+                    t.completed ? "line-through opacity-60" : ""
                   }`}
                 >
-                  <p
-                    onClick={() => toggleTask(t.id)}
-                    className={`cursor-pointer font-medium ${
-                      t.completed ? "line-through opacity-70" : ""
-                    }`}
-                  >
-                    {t.text}
-                  </p>
+                  {t.text}
+                </span>
 
-                  <button
-                    onClick={() => deleteTask(t.id)}
-                    className="text-red-500 hover:scale-110 transition"
-                  >
-                    ✕
-                  </button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {filteredTasks.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center opacity-60 mt-10"
-              >
-                <span className="text-4xl mb-2">🚀</span>
-                <p>No tasks yet. Time to build momentum.</p>
-              </motion.div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-14 text-xs text-center opacity-70 tracking-wide">
-          Designed & Developed by Chaitanya Mucharla • Next.js 16 • Tailwind CSS • Framer Motion
+                <button
+                  onClick={() => deleteTask(t.id)}
+                  className="ml-3 text-red-300 hover:text-red-500"
+                >
+                  ✕
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
